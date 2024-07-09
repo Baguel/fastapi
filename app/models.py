@@ -1,4 +1,4 @@
-from typing import Optional, Literal
+from typing import Optional, Literal, ClassVar
 from pydantic import BaseModel, Field
 import datetime
 
@@ -15,16 +15,6 @@ class Todo(BaseModel):
     status:  Literal['Started', 'finished'] | Optional[str] = 'Started'
     create_at: str = datetime.datetime.now()
 
-class Login(BaseModel):
+class login(BaseModel):
     email: str
-    password: str
-
-class Token(BaseModel):
-    access_token: str
-    token_type: str
-
-class TokenData(BaseModel):
-    username: str | None = None
-
-class UserInDB(User):
     password: str
