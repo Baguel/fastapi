@@ -13,7 +13,8 @@ class Todo(BaseModel):
     name: str
     description: str
     status:  Literal['Started', 'finished'] | Optional[str] = 'Started'
-    create_at: str = datetime.datetime.now()
+    user_id: str
+    create_at: ClassVar[str] = datetime.datetime.now()
 
 class login(BaseModel):
     email: str

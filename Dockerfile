@@ -1,5 +1,7 @@
-FROM python:3
+FROM python:3.9
 
-RUN "pip3 install -r requirements.txt"
+WORKDIR /home/florentin/fastapi
 
-CMD  ["fastapi", "dev", "app/main.py"]
+RUN pip3 install requirements.txt
+
+CMD ["fastapi", "dev", "app/main.py"]

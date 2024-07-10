@@ -21,7 +21,6 @@ router = APIRouter()
 config = dotenv_values(".env")
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-
 ##function to check if user already exist
 def getExistingUser():
     li = []
@@ -30,7 +29,6 @@ def getExistingUser():
         li.append({"email" : user['email'], "id": user['id']})
     
     return li
-
 
 ##Create a new User
 @router.post("/create/user")
@@ -79,16 +77,16 @@ async def loginUser(body: login):
     else:
             raise HTTPException(status_code=404, detail="user doesn't exist")
 
-
 ##Create a new Todo
 @router.post("/create/todo")
 async def createTodo(body: Todo, user : dict = Depends(JWTBearer())):
     myuuid = uuid.uuid4()
+    user_id = user['user']['id']
     data = Todo(
         id = str(myuuid),
         name=body.name,
         description=body.description,
-        user_id = user["id"]
+        user_id = user_id
     )
     todo = jsonable_encoder(data)
     res =  r.json().set(f'Todo:{myuuid}', '$', todo)
@@ -110,14 +108,15 @@ async def getSpecifiqueTodo(id: str, user : dict = Depends(JWTBearer())):
 @router.get("/todo")
 async def all_todos(user : dict = Depends(JWTBearer())):
     all_todo = []
-    for key in r.scan_iter("Todo:*"):
-        todo =  r.json().get(key)
-        all_todo.append(todo)
+    user_todo = []
+    all_todo = [r.json().get(key) for key in r.scan_iter("Todo:*")]
     
-    if all_todo:
-        return all_todo
-    else:
-        raise HTTPException(status_code=404, detail="No Todo Found")
+    for todo in all_todo:
+        if todo["user_id"] == user['user']['id']:
+            user_todo.append(todo)
+            return user_todo
+        else:
+            raise HTTPException(status_code=404, detail="No Todo Found")
 
 ##delete a Todo 
 @router.delete("/delete/todo/{id}")
@@ -132,6 +131,20 @@ async def deleteTodo(id: str, user : dict = Depends(JWTBearer())):
     except ConnectionError:
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
+##delete your account 
+@router.delete("/delete/account")
+async def deleteAccount(user : dict = Depends(JWTBearer())):
+    id = user['user']['id']
+    key = f'User:{id}'
+    try:
+        if key:
+            Userdelete = r.json().forget(key)
+            return "delete successfully"
+        else:
+            raise HTTPException(status_code=404, detail="User not found")
+    except ConnectionError:
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+    
 ##Uplaod todo a Todo
 @router.put("/update/todo/{id}")
 async def updateTodo(id: str, body: Todo, user : dict = Depends(JWTBearer())):
@@ -141,8 +154,8 @@ async def updateTodo(id: str, body: Todo, user : dict = Depends(JWTBearer())):
         if td:
             data = Todo(
                 id=id,
-                name=td['name'],
-                description=td['description'],
+                name=body.name,
+                description=body.description,
             )          
             new_data = jsonable_encoder(data)
             update_data = r.json().set(f'Todo:{id}', '$', new_data)
